@@ -1,11 +1,11 @@
-# build.ps1 -- Compile / flash AttitudeBall over USB
+﻿# build.ps1 —— 通过 USB 编译 / 烧录 AttitudeBall
 #
-# Usage:
-#   .\build.ps1                     compile only
-#   .\build.ps1 -Upload             compile + flash to auto-detected COM port
-#   .\build.ps1 -Upload -Port COM5  specify COM port
-#   .\build.ps1 -Clean              remove build dir, then compile
-#   .\build.ps1 -Monitor            open serial monitor (Ctrl+C to quit)
+# 用法：
+#   .\build.ps1                     仅编译
+#   .\build.ps1 -Upload             编译 + 烧录（自动探测串口）
+#   .\build.ps1 -Upload -Port COM5  指定串口
+#   .\build.ps1 -Clean              先删除构建目录再编译
+#   .\build.ps1 -Monitor            编译后打开串口监视器（Ctrl+C 退出）
 param(
   [switch]$Upload,
   [switch]$Clean,
@@ -13,7 +13,7 @@ param(
   [string]$Port = ""
 )
 
-# Native tools write progress to stderr; with Stop that would abort the script.
+# 原生工具会把进度写到 stderr，用 Stop 会直接中断脚本。
 $ErrorActionPreference = 'Continue'
 
 $root     = 'E:\DeepSeekRuntime\APP\esp32s3-lcd185'
@@ -22,23 +22,23 @@ $sketch   = Join-Path $root 'AttitudeBall'
 $libs     = Join-Path $root '_libs'
 $buildDir = Join-Path $root '_build'
 
-# Whole-board definition + 3MB APP partition + CDC serial (so Serial goes over USB-C)
+# 整板定义 + 3MB APP 分区 + CDC 串口（这样 Serial 走 USB-C）
 $fqbn = 'esp32:esp32:waveshare_esp32_s3_touch_lcd_185:PartitionScheme=app3M_fat9M_16MB,CDCOnBoot=cdc,USBMode=hwcdc,UploadSpeed=921600'
 
-if (-not (Test-Path $exe)) { Write-Host "arduino-cli not found: $exe" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $exe)) { Write-Host "未找到 arduino-cli：$exe" -ForegroundColor Red; exit 1 }
 
 if ($Clean -and (Test-Path $buildDir)) {
-  Write-Host "Cleaning build dir ..." -ForegroundColor Yellow
+  Write-Host "正在清理构建目录 ..." -ForegroundColor Yellow
   Remove-Item $buildDir -Recurse -Force
 }
 
-Write-Host "=== Compiling ===" -ForegroundColor Cyan
+Write-Host "=== 开始编译 ===" -ForegroundColor Cyan
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 & $exe compile --fqbn $fqbn --libraries $libs --build-path $buildDir --warnings all $sketch 2>&1 |
   ForEach-Object { Write-Host $_ }
-if ($LASTEXITCODE -ne 0) { Write-Host "Compile failed" -ForegroundColor Red; exit 1 }
+if ($LASTEXITCODE -ne 0) { Write-Host "编译失败" -ForegroundColor Red; exit 1 }
 $sw.Stop()
-Write-Host ("Compile OK in {0:N1}s" -f $sw.Elapsed.TotalSeconds) -ForegroundColor Green
+Write-Host ("编译完成，用时 {0:N1}s" -f $sw.Elapsed.TotalSeconds) -ForegroundColor Green
 
 if ($Upload) {
   if (-not $Port) {
@@ -47,17 +47,17 @@ if ($Upload) {
     $line = $listOut | Where-Object { "$_" -match 'COM\d+' } | Select-Object -First 1
     if ("$line" -match '(COM\d+)') {
       $Port = $matches[1]
-      Write-Host "Using port: $Port" -ForegroundColor Yellow
+      Write-Host "使用串口：$Port" -ForegroundColor Yellow
     } else {
-      Write-Host "No serial port found. Plug the board in, or pass -Port COMx" -ForegroundColor Red
+      Write-Host "未找到串口。请插上开发板，或用 -Port COMx 指定" -ForegroundColor Red
       exit 1
     }
   }
   Write-Host ""
-  Write-Host "=== Flashing to $Port ===" -ForegroundColor Cyan
+  Write-Host "=== 烧录到 $Port ===" -ForegroundColor Cyan
   & $exe upload -p $Port --fqbn $fqbn --input-dir $buildDir $sketch 2>&1 | ForEach-Object { Write-Host $_ }
-  if ($LASTEXITCODE -ne 0) { Write-Host "Upload failed" -ForegroundColor Red; exit 1 }
-  Write-Host "Flash OK" -ForegroundColor Green
+  if ($LASTEXITCODE -ne 0) { Write-Host "烧录失败" -ForegroundColor Red; exit 1 }
+  Write-Host "烧录成功" -ForegroundColor Green
 }
 
 if ($Monitor) {
@@ -66,9 +66,9 @@ if ($Monitor) {
     $line = $listOut | Where-Object { "$_" -match 'COM\d+' } | Select-Object -First 1
     if ("$line" -match '(COM\d+)') { $Port = $matches[1] }
   }
-  if (-not $Port) { Write-Host "No serial port found." -ForegroundColor Red; exit 1 }
+  if (-not $Port) { Write-Host "未找到串口。" -ForegroundColor Red; exit 1 }
   Write-Host ""
-  Write-Host "=== Serial monitor on $Port (Ctrl+C to quit) ===" -ForegroundColor Cyan
+  Write-Host "=== 串口监视器：$Port（Ctrl+C 退出）===" -ForegroundColor Cyan
   & $exe monitor -p $Port -c baudrate=115200
 }
 

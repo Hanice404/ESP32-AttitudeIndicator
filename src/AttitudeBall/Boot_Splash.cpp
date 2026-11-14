@@ -1,4 +1,4 @@
-// Boot_Splash.cpp —— 开机 Logo 与渐隐实现
+﻿// Boot_Splash.cpp —— 开机 Logo 与渐隐实现
 #include "Boot_Splash.h"
 
 #include <string.h>
@@ -15,7 +15,7 @@ namespace {
 
 constexpr int W = 360;
 constexpr int H = 360;
-constexpr int BAND_H = 36;  // 每条带的像素行数：36*360*2 = 25.9 KB（内部 RAM）
+constexpr int BAND_H = 36;  // 每条带的像素行数：36×360×2 = 25.9 KB（放内部 RAM）
 
 uint16_t* s_logo = nullptr;  // PSRAM：解码后的 Logo
 uint16_t* s_band = nullptr;  // 内部 RAM：发送带缓冲
@@ -111,3 +111,4 @@ void crossfade(const uint16_t* ui, uint32_t totalMs) {
 }
 
 }  // namespace splash
+

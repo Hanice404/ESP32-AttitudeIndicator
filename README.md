@@ -1,74 +1,71 @@
-# ESP32 Attitude Indicator
+# ESP32 姿态仪（人工地平仪）
 
-A flight-instrument style **artificial horizon (attitude indicator)** running on the
-[Waveshare ESP32-S3-Touch-LCD-1.85](https://www.waveshare.com/esp32-s3-touch-lcd-1.85.htm)
-round 360×360 display.
+跑在 [微雪 ESP32-S3-Touch-LCD-1.85](https://www.waveshare.net/shop/ESP32-S3-Touch-LCD-1.85.htm)
+圆形 360×360 屏幕上的**飞行仪表风格姿态仪（人工地平仪）**。
 
-![Screenshot](docs/screenshot.png)
+![设备截图](docs/screenshot.png)
 
-*Actual framebuffer captured from the device (360×360, RGB565).*
+*上图是从设备**真实帧缓冲**直接导出的画面（360×360，RGB565），与屏幕显示逐像素一致。*
 
 ---
 
-## Features
+## 功能一览
 
-| Feature | Description |
+| 功能 | 说明 |
 | --- | --- |
-| **Artificial horizon** | Sky/ground with dithered gradient, white horizon line, pitch ladder (±10/20/30° with digits), roll scale ±60° with a moving red pointer, and a fixed yellow aircraft symbol |
-| **One-button cage** | Short press **BOOT** → the current attitude becomes "level" (stored in NVS). Also happens automatically at every boot |
-| **Boot logo** | Built-in logo with a 0.8 s cross-fade into the instrument |
-| **Touch dimming** | Drag up/down to change brightness in 10 % steps; a yellow bar appears while adjusting. Value is persisted. **No auto dim / auto screen-off** |
-| **Battery** | ADC readout on the serial console |
-| **WiFi OTA** | ArduinoOTA, password-protected |
-| **Crash guard** | After 2 abnormal resets the firmware enters a safe mode (serial + WiFi only) so the board cannot get bricked |
+| **人工地平仪** | 蓝天/棕地渐变 + 白色地平线 + 俯仰刻度梯（±10/20/30°，带数字）+ ±60° 滚转刻度弧与滑动红色指针 + 固定黄色飞机符号 |
+| **一键对准** | **短按 BOOT** 把当前姿态记为"水平"并存进 NVS；**每次开机也会自动归零一次** |
+| **开机动画** | 显示内置 Logo，0.8 秒交叉渐隐进入仪表画面 |
+| **触摸调光** | 上/下拖动屏幕调亮度，每档 10%，底部黄色亮度条提示；**不自动降亮度、不自动熄屏** |
+| **电池监测** | ADC 采样，串口可查看电压与百分比 |
+| **WiFi OTA** | ArduinoOTA，带密码保护 |
+| **崩溃保护** | 连续异常复位 2 次自动进入安全模式（只跑串口 + WiFi），防止变砖 |
 
-No gimbal lock: the horizon is computed from the gravity vector with a projective
-(elevation-based) model, so it stays correct even when the device is vertical or
-tilted 90°.
-
----
-
-## Hardware
-
-- **Board**: Waveshare ESP32-S3-Touch-LCD-1.85 (ESP32-S3R8, 16 MB flash, 8 MB OPI PSRAM)
-- **Display**: ST77916, 360×360, QSPI @ 80 MHz (circular visible area)
-- **Touch**: CST816 (I²C 0x15)
-- **IMU**: QMI8658 (I²C 0x6B)
-- **IO expander**: TCA9554PWR, **RTC**: PCF85063
-- **Power**: Li-Po + USB-C, PWR button (long press = power off)
+画面计算基于**重力向量的投影模型**，不是欧拉角，因此**没有万向节锁** ——
+设备竖立、倾斜 90° 甚至倒置附近都能正常显示。
 
 ---
 
-## Quick start (prebuilt firmware)
+## 硬件
 
-1. Download **[`attitude-indicator-merged.bin`](https://github.com/Hanice404/ESP32-AttitudeIndicator/releases/latest)** (1.27 MB) from the Releases page — or take it from `firmware/` in this repo.
-2. Flash it at offset **0x0** (see [FLASHING.md](FLASHING.md) for all methods).
-3. Place the device in the attitude you consider "level", then **short press BOOT**
-   (or simply power-cycle — the firmware zeroes itself at boot).
+- **开发板**：微雪 ESP32-S3-Touch-LCD-1.85（ESP32-S3R8，16 MB Flash，8 MB OPI PSRAM）
+- **屏幕**：ST77916，360×360，QSPI 80 MHz（可视区为内切圆）
+- **触摸**：CST816（I²C 地址 0x15）
+- **姿态传感器**：QMI8658（I²C 地址 0x6B）
+- **IO 扩展**：TCA9554PWR；**RTC**：PCF85063
+- **供电**：锂电池 + USB-C，PWR 键长按关机
+
+---
+
+## 快速上手（直接刷预编译固件）
+
+1. 从 **[Releases 页面](https://github.com/Hanice404/ESP32-AttitudeIndicator/releases/latest)** 下载 `attitude-indicator-merged.bin`（1.27 MB），也可以直接用本仓库 `firmware/` 里的同名文件。
+2. 用 **偏移 0x0** 一次写入（四种烧录方式见 [烧录说明](FLASHING.md)）。
+3. 把设备摆成你认为"水平"的姿态，**短按一次 BOOT**（或直接断电重启，固件会自动归零）。
 
 ```bash
 pip install esptool
-esptool.py --chip esp32s3 -p COM6 write_flash 0x0 attitude-indicator-merged.bin
+esptool.py --chip esp32s3 -p COM6 -b 921600 write_flash 0x0 attitude-indicator-merged.bin
 ```
 
 ---
 
-## Controls
+## 操作说明
 
-| Input | Action |
+| 操作 | 效果 |
 | --- | --- |
-| **Short press BOOT** (40 ms – 1 s) | Cage the horizon: current attitude becomes level |
-| **Long press BOOT** (~2 s) | Rotate display 0° ↔ 180° |
-| **Drag up / down** | Brightness +10 % / −10 % (5–100 %), yellow bar feedback |
-| **Double tap** | Reset peak values |
-| **Long press PWR** | Power off |
-| Serial `info` / `show` / `cal` / `save` / `reboot` … | Debug and tuning commands (see docs) |
+| **短按 BOOT**（40 ms ~ 1 s） | 对准地平线：把当前姿态记为水平基准 |
+| **长按 BOOT**（约 2 s） | 屏幕方向 0° ↔ 180° 切换 |
+| **上下拖动屏幕** | 加亮 / 减亮，每档 10%（5%~100%），底部黄色亮度条提示 |
+| **双击屏幕** | 复位峰值记录 |
+| **长按 PWR** | 关机 |
+| 串口命令 `info` / `show` / `cal` / `save` / `reboot` … | 调试与调参（详见 `src/README.md`） |
 
 ---
 
-## Build from source
+## 从源码编译
 
-Requirements: **arduino-cli** (or Arduino IDE 2), **ESP32 core 3.1.1**, **LVGL 8.3.10**.
+需要 **arduino-cli**（或 Arduino IDE 2）、**ESP32 核心 3.1.1**、**LVGL 8.3.10**。
 
 ```bash
 arduino-cli compile \
@@ -77,47 +74,29 @@ arduino-cli compile \
   src/AttitudeBall
 ```
 
-See `src/README.md` for the full development notes: IMU axis mapping, NVS layout,
-every pitfall that was hit during development (31 entries), and all serial commands.
+完整的开发笔记（IMU 轴向映射、NVS 结构、**31 条踩坑记录**、全部串口命令）见 [`src/README.md`](src/README.md)。
 
 ---
 
-## Customising
+## 自定义
 
-| What | Where |
+| 想改什么 | 改哪里 |
 | --- | --- |
-| Boot logo | `src/tools/make-logo.ps1 my-logo.svg` (SVG / PNG / JPG → `Boot_Logo.h`) |
-| Logo hold / fade time | `src/AttitudeBall/Config.h` → `SPLASH_HOLD_MS`, `SPLASH_FADE_MS` |
-| Brightness limits / step | `Config.h` → `BRIGHT_MIN/MAX/STEP` |
-| Sky & ground colours | `src/AttitudeBall/UI_Horizon.cpp` → `skyR0…`, `gndR0…` |
-| Horizon line thickness, ladder spacing | `UI_Horizon.cpp` (`FOCAL`, `LADDER_L`) |
+| 开机 Logo | `src/tools/make-logo.ps1 我的Logo.svg`（SVG / PNG / JPG → `Boot_Logo.h`） |
+| Logo 停留与渐隐时长 | `src/AttitudeBall/Config.h` → `SPLASH_HOLD_MS`、`SPLASH_FADE_MS` |
+| 亮度上下限与步进 | `Config.h` → `BRIGHT_MIN` / `BRIGHT_MAX` / `BRIGHT_STEP` |
+| 天地配色 | `src/AttitudeBall/UI_Horizon.cpp` → `skyR0…`、`gndR0…` |
+| 地平线粗细、刻度梯间距 | `UI_Horizon.cpp`（`FOCAL`、`LADDER_L`） |
 
 ---
 
-## 中文说明
+## 鸣谢
 
-**这是一个给 Waveshare ESP32-S3-Touch-LCD-1.85（1.85 寸圆形屏）写的姿态仪（人工地平仪）固件。**
+- 屏幕（ST77916）、触摸（CST816）、IMU（QMI8658）、IO 扩展（TCA9554）
+  与电源键驱动来自**微雪官方 ESP32-S3-Touch-LCD-1.85 示例代码**，保留原版权声明。
+- 姿态解算与界面渲染为本项目从零实现。
+- 字体使用 LVGL 内置字体。
 
-- 蓝天/棕地渐变 + 地平线 + 俯仰刻度梯（±10/20/30，带数字）+ 滚转刻度弧与红色指针 + 固定飞机符号
-- **短按 BOOT = 对齐地平线**（把当前姿态记为水平）；**每次开机也会自动归零**
-- 开机显示 Logo，0.8 秒渐隐进入仪表画面
-- **上下拖动屏幕调亮度**（每 10% 一档，底部黄色亮度条提示），不自动降亮度、不自动熄屏
-- 支持 WiFi OTA、电池监测、崩溃保护
+## 许可证
 
-烧录：用 `firmware/attitude-indicator-merged.bin`，偏移 **0x0** 一次写入即可，详见 [FLASHING.md](FLASHING.md)。
-
-编译源码：arduino-cli + ESP32 core 3.1.1 + LVGL 8.3.10，
-详细踩坑记录和全部串口命令见 `src/README.md`。
-
----
-
-## Credits
-
-- Display / touch / IMU drivers are derived from the **Waveshare ESP32-S3-Touch-LCD-1.85**
-  demo code (kept under their original notices).
-- UI rendering and attitude maths written from scratch for this project.
-- Fonts: LVGL built-in.
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+MIT，详见 [LICENSE](LICENSE)。

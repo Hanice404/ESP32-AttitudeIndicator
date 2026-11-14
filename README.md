@@ -41,7 +41,7 @@ tilted 90°.
 
 ## Quick start (prebuilt firmware)
 
-1. Download `firmware/attitude-indicator-merged.bin` from this repo.
+1. Download **[`attitude-indicator-merged.bin`](https://github.com/Hanice404/ESP32-AttitudeIndicator/releases/latest)** (1.27 MB) from the Releases page — or take it from `firmware/` in this repo.
 2. Flash it at offset **0x0** (see [FLASHING.md](FLASHING.md) for all methods).
 3. Place the device in the attitude you consider "level", then **short press BOOT**
    (or simply power-cycle — the firmware zeroes itself at boot).

@@ -1,0 +1,27 @@
+# Build output
+_build/
+libs/
+*.bin.bak
+
+# Toolchain / machine specific
+_tools/arduino-cli/
+_tools/*.log
+_tools/removed_backup/
+_tools/_svgtmp/
+src/tools/_svgtmp/
+*.log
+
+# Scratch
+shot.bin
+sky_preview.png
+svg_preview.png
+logo_preview.png
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
